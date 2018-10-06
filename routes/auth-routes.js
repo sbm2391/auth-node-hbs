@@ -5,11 +5,6 @@ const authRoutes = express.Router();
 const bcrypt         = require("bcrypt");
 const bcryptSalt     = 10;
 
-// vista secret
-authRoutes.get("/", (req, res, next) => {
-  res.render("index");
-});
-
 // vista del sign up
 authRoutes.get("/signup", (req, res, next) => {
   res.render("auth/signup");
@@ -52,5 +47,56 @@ authRoutes.post("/signup", (req, res, next) => {
       }
     });
   })
+
 })
+
+authRoutes.get("/login", (req, res, next) => {
+  res.render("auth/login");
+});
+
+authRoutes.post("/login", (req, res, next) => {
+  const username = req.body.username;
+  const password = req.body.password
+  // validación de campos no vacios
+  if(username === "") {
+    res.render("auth/login", {
+      errorMessage: "No escribiste nada en el nombre de usuario"
+    });
+    return;
+  } 
+  if (password === "") {
+    res.render("auth/login", {
+      errorMessage: "No escribiste nada en la contraseña"
+    });
+    return;
+  }
+
+  User.findOne({ "username": username }, (err, user) => {
+
+    if (err || !user) {
+      res.render("auth/login", {
+        errorMessage: "The username doesn't exist"
+      });
+      return;
+    }
+    // comparando passwords
+    if (bcrypt.compareSync(password, user.password)) {
+      req.session.currentUser = user;
+      res.redirect("/secret");
+    } else {
+      res.render("auth/login", {
+        errorMessage: "Tu contraseña es incorrecta"
+      });
+      return;
+    }
+  });
+})
+
+// destruir la sesión
+authRoutes.get("/logout", (req, res, next) => {
+  req.session.destroy((err) => {
+    res.redirect("/login");
+  });
+});
+
 module.exports = authRoutes;

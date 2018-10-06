@@ -8,8 +8,13 @@ const hbs          = require('hbs');
 const mongoose     = require('mongoose');
 const logger       = require('morgan');
 const path         = require('path');
+// sesiones 
+const session      = require("express-session");
+const MongoStore   = require("connect-mongo")(session);
+
 // rutas
 const authRoutes = require('./routes/auth-routes');
+const siteRoutes = require('./routes/site-routes');
 
 // Mongoose configuration
 mongoose.Promise = Promise;
@@ -32,6 +37,15 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+// sesion
+app.use(session({
+  secret: "basic-auth-secret",
+  cookie: { maxAge: 60000 },
+  store: new MongoStore({
+    mongooseConnection: mongoose.connection,
+    ttl: 24 * 60 * 60 // 1 day
+  })
+}));
 // Express View engine setup
 
 app.use(require('node-sass-middleware')({
@@ -52,6 +66,6 @@ app.use(favicon(path.join(__dirname, 'public', 'images', 'favicon.ico')));
 app.locals.title = 'Express - Generated with IronGenerator';
 
 app.use('/', authRoutes);
-
+app.use('/', siteRoutes);
 
 module.exports = app;
